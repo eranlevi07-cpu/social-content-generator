@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Content Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --card-hover: #1f2335;
+      --border: #2a2d3e;
+      --border-active: #3b82f6;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text: #f1f5f9;
+      --text-muted: #64748b;
+      --text-secondary: #94a3b8;
+      --input-bg: #12151f;
+      --radius: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Heebo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      direction: rtl;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+
+    /* Header */
+    header { margin-bottom: 44px; }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #60a5fa;
+      letter-spacing: 0.05em;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+    }
+
+    .header-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: #3b82f6;
+      border-radius: 50%;
+    }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      font-size: 16px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 14px;
+    }
+
+    /* Brand cards */
+    .brand-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 580px) {
+      .brand-grid { grid-template-columns: 1fr; }
+    }
+
+    .brand-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      cursor: pointer;
+      transition: border-color 0.18s, background 0.18s, transform 0.15s;
+      user-select: none;
+    }
+
+    .brand-card:hover {
+      background: var(--card-hover);
+      border-color: #374151;
+      transform: translateY(-1px);
+    }
+
+    .brand-card.active {
+      border-color: var(--border-active);
+      background: rgba(59, 130, 246, 0.07);
+    }
+
+    .brand-icon { font-size: 26px; margin-bottom: 10px; display: block; }
+    .brand-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .brand-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    .custom-brand-input { margin-top: 10px; display: none; }
+    .brand-card.active .custom-brand-input { display: block; }
+
+    .custom-brand-input textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Heebo', sans-serif;
+      font-size: 13px;
+      padding: 10px 12px;
+      resize: none;
+      height: 70px;
+      direction: rtl;
+    }
+
+    .custom-brand-input textarea:focus { outline: none; border-color: var(--border-active); }
+    .custom-brand-input textarea::placeholder { color: var(--text-muted); }
+
+    /* ── Chat section ─────────────────────────────────────────── */
+    #chat-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    #chat-section.visible { display: block; }
+
+    .chat-container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-avatar {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .chat-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .chat-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .chat-messages {
+      padding: 24px 20px;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* AI bubble — right side (RTL default) */
+    .bubble-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .bubble-row.ai { flex-direction: row-reverse; }
+    .bubble-row.user { flex-direction: row; }
+
+    .bubble-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+
+    .bubble-row.ai .bubble-avatar {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    }
+
+    .bubble-row.user .bubble-avatar {
+      background: #1e3a5f;
+    }
+
+    .chat-bubble {
+      max-width: 72%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.6;
+      animation: bubbleIn 0.2s ease;
+    }
+
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: scale(0.95) translateY(4px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .bubble-row.ai .chat-bubble {
+      background: #1e2235;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-top-right-radius: 4px;
+    }
+
+    .bubble-row.user .chat-bubble {
+      background: var(--accent);
+      color: #fff;
+      border-bottom-left-radius: 4px;
+    }
+
+    /* Typing indicator */
+    .typing-bubble {
+      background: #1e2235;
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: 18px;
+      border-top-right-radius: 4px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .typing-dot {
+      width: 7px; height: 7px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: typingBounce 1.2s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Chat input area */
+    .chat-input-area {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      color: var(--text);
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px;
+      padding: 10px 16px;
+      direction: rtl;
+      resize: none;
+      min-height: 42px;
+      max-height: 120px;
+      line-height: 1.5;
+      transition: border-color 0.18s;
+      overflow-y: auto;
+    }
+
+    .chat-input:focus { outline: none; border-color: var(--border-active); }
+    .chat-input::placeholder { color: var(--text-muted); }
+    .chat-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .chat-send-btn {
+      width: 42px; height: 42px;
+      background: var(--accent);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.18s, transform 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat-send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+    .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* Chat generate button */
+    .chat-generate-wrap {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .chat-generate-wrap.visible { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 32px 0;
+    }
+
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+
+    .field { margin-bottom: 22px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text);
+      font-family: 'Heebo', sans-serif;
+      font-size: 15px;
+      padding: 12px 14px;
+      direction: rtl;
+      transition: border-color 0.18s;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--border-active);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    textarea { resize: vertical; min-height: 100px; }
+    input[type="date"] { color-scheme: dark; }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 500px) {
+      .row-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Generate button */
+    .btn-generate {
+      width: 100%;
+      padding: 15px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: 'Heebo', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-generate:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(59, 130, 246, 0.35);
+    }
+
+    .btn-generate:active { transform: translateY(0); }
+
+    .btn-generate:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Results */
+    #results { margin-top: 40px; }
+
+    .loading-msg {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      color: var(--text-secondary);
+      font-size: 15px;
+      margin-top: 32px;
+    }
+
+    .loading-spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(59,130,246,0.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      color: #fca5a5;
+      font-size: 14px;
+      margin-top: 32px;
+    }
+
+    /* Results table */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      margin-top: 40px;
+    }
+
+    .results-title { font-size: 18px; font-weight: 700; color: var(--text); }
+    .results-meta { font-size: 13px; color: var(--text-muted); }
+
+    .week-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .week-table th {
+      background: var(--card);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .week-table td {
+      padding: 14px;
+      border-bottom: 1px solid rgba(42,45,62,0.6);
+      vertical-align: top;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .week-table tr:last-child td { border-bottom: none; }
+    .week-table tr:hover td { background: rgba(59,130,246,0.03); }
+
+    .day-cell { font-weight: 700; color: var(--text); white-space: nowrap; }
+    .date-sub { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+    .topic-cell { font-weight: 600; color: var(--text); }
+
+    .platform-badge {
+      display: inline-block;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 6px;
+      padding: 3px 9px;
+      font-size: 11px;
+      color: #60a5fa;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .cell-with-copy { position: relative; min-width: 160px; max-width: 280px; }
+    .cell-text { padding-left: 36px; }
+
+    .copy-cell-btn {
+      position: absolute;
+      top: 0; left: 0;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 3px 7px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Heebo', sans-serif;
+      white-space: nowrap;
+    }
+
+    .copy-cell-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .copy-cell-btn.copied { border-color: #22c55e; color: #22c55e; }
+
+    #download-section { display: none; margin-top: 20px; text-align: center; }
+
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 24px;
+      cursor: pointer;
+      transition: border-color 0.18s, color 0.18s;
+    }
+
+    .btn-download:hover { border-color: var(--accent); color: var(--accent); }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    /* ── Goal chips ───────────────────────────────────────────── */
+    .chips-panel {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .chips-panel.visible { display: flex; }
+
+    .chips-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--input-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 13px;
+      font-family: 'Heebo', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      text-align: right;
+      direction: rtl;
+      user-select: none;
+    }
+
+    .chip:hover {
+      border-color: #374151;
+      color: var(--text);
+    }
+
+    .chip.selected {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.1);
+      color: #93c5fd;
+    }
+
+    .chips-confirm {
+      width: 100%;
+      padding: 10px;
+      background: var(--accent);
+      border: none;
+      border-radius: 9px;
+      color: #fff;
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .chips-confirm:hover { background: var(--accent-hover); }
+    .chips-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Date picker in chat ──────────────────────────────────── */
+    .chat-date-wrap {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .chat-date-wrap.visible { display: flex; }
+
+    .chat-date-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .chat-date-input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text);
+      font-family: 'Heebo', sans-serif;
+      font-size: 15px;
+      padding: 10px 14px;
+      color-scheme: dark;
+      transition: border-color 0.18s;
+    }
+
+    .chat-date-input:focus { outline: none; border-color: var(--border-active); }
+
+    .chat-date-confirm {
+      padding: 10px 20px;
+      background: var(--accent);
+      border: none;
+      border-radius: 9px;
+      color: #fff;
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .chat-date-confirm:hover { background: var(--accent-hover); }
+
+    /* ── Custom brand form panel ──────────────────────────────── */
+    #custom-brand-panel { animation: fadeIn 0.25s ease; }
+
+    .brand-form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 16px;
+    }
+
+    .brand-form-step-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 20px;
+    }
+
+    .brand-field { margin-bottom: 18px; }
+    .brand-field:last-child { margin-bottom: 0; }
+
+    .brand-field > label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .brand-tone-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .brand-tone-chip {
+      background: var(--input-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-family: 'Heebo', sans-serif;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .brand-tone-chip:hover { border-color: #374151; color: var(--text); }
+    .brand-tone-chip.selected {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.1);
+      color: #93c5fd;
+    }
+
+    .url-row { display: flex; gap: 10px; }
+    .url-row input { flex: 1; }
+
+    .btn-analyze-url {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text-secondary);
+      font-family: 'Heebo', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 0 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-analyze-url:hover { border-color: var(--accent); color: var(--accent); }
+
+    .file-upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--input-bg);
+    }
+
+    .file-upload-area:hover {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.04);
+    }
+
+    .file-upload-icon { font-size: 22px; margin-bottom: 5px; }
+    .file-upload-text { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+    .file-upload-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+    .file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(59,130,246,0.05);
+      border: 1px solid rgba(59,130,246,0.15);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .file-item-name { flex: 1; }
+
+    .file-remove {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .file-remove:hover { color: #ef4444; }
+
+    .btn-analyze-brand {
+      width: 100%;
+      margin-top: 20px;
+      padding: 15px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: 'Heebo', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.18s, transform 0.15s;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-analyze-brand:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-analyze-brand:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Analysis result card */
+    #brand-analysis-card {
+      margin-top: 16px;
+      background: rgba(34,197,94,0.05);
+      border: 1px solid rgba(34,197,94,0.22);
+      border-radius: 16px;
+      padding: 24px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .analysis-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.28);
+      border-radius: 100px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #4ade80;
+      margin-bottom: 16px;
+    }
+
+    .analysis-field { margin-bottom: 14px; }
+    .analysis-field:last-child { margin-bottom: 0; }
+
+    .analysis-field-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 5px;
+    }
+
+    .analysis-field-value {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .analysis-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+    .analysis-topic-tag {
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 12px;
+      color: #60a5fa;
+    }
+
+    .btn-start-chat {
+      width: 100%;
+      margin-top: 18px;
+      padding: 13px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: 'Heebo', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+
+    .btn-start-chat:hover { background: var(--accent-hover); }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div class="header-badge">AI · Content Planner</div>
+      <h1>Social Content Generator</h1>
+      <p>תוכנית תוכן שבועית מבוססת AI</p>
+    </header>
+
+    <!-- Brand selection -->
+    <div class="section-label">בחר מותג</div>
+    <div class="brand-grid">
+
+      <div class="brand-card" data-brand="yomkef" onclick="selectBrand(this)">
+        <span class="brand-icon">🎉</span>
+        <div class="brand-name">יום כיף</div>
+        <div class="brand-desc">הפקת אירועי חברה וגיבושים</div>
+      </div>
+
+      <div class="brand-card" data-brand="eranpro" onclick="selectBrand(this)">
+        <span class="brand-icon">👤</span>
+        <div class="brand-name">ערן פרו</div>
+        <div class="brand-desc">מיתוג אישי ותוכן מקצועי</div>
+      </div>
+
+      <div class="brand-card" data-brand="custom" onclick="selectBrand(this)">
+        <span class="brand-icon">✦</span>
+        <div class="brand-name">מותג חדש +</div>
+        <div class="brand-desc">הגדר מותג עם ניתוח AI</div>
+      </div>
+
+    </div>
+
+    <!-- Custom brand form panel -->
+    <div id="custom-brand-panel" style="display:none">
+      <hr class="divider" />
+      <div class="section-label">הגדרת מותג חדש</div>
+
+      <!-- Step A -->
+      <div class="brand-form-card">
+        <div class="brand-form-step-label">שלב א — פרטי בסיס</div>
+
+        <div class="brand-field">
+          <label>שם המותג</label>
+          <input type="text" id="cb-name" placeholder="לדוגמה: ספארקל טכנולוגיות" />
+        </div>
+
+        <div class="brand-field">
+          <label>תיאור קצר</label>
+          <textarea id="cb-desc" placeholder="מה עושה המותג, מה הייחוד שלו, מה מבדל אותו..."></textarea>
+        </div>
+
+        <div class="brand-field">
+          <label>קהל יעד</label>
+          <textarea id="cb-audience" placeholder="מי הלקוחות? גיל, תחום, צרכים, כאבים..."></textarea>
+        </div>
+
+        <div class="brand-field">
+          <label>טון ואישיות המותג</label>
+          <div class="brand-tone-row">
+            <button class="brand-tone-chip" onclick="toggleBrandTone(this)">מקצועי</button>
+            <button class="brand-tone-chip" onclick="toggleBrandTone(this)">כיפי</button>
+            <button class="brand-tone-chip" onclick="toggleBrandTone(this)">אישי</button>
+            <button class="brand-tone-chip" onclick="toggleBrandTone(this)">סמכותי</button>
+            <button class="brand-tone-chip" onclick="toggleBrandTone(this)">מעורר השראה</button>
+            <button class="brand-tone-chip" onclick="toggleBrandTone(this)">ישיר</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step B -->
+      <div class="brand-form-card">
+        <div class="brand-form-step-label">שלב ב — מקורות מידע</div>
+
+        <div class="brand-field">
+          <label>URL אתר</label>
+          <div class="url-row">
+            <input type="text" id="cb-url" placeholder="https://..." />
+            <button class="btn-analyze-url" onclick="analyzeUrl()">נתח אתר</button>
+          </div>
+        </div>
+
+        <div class="brand-field">
+          <label>אתרי רפרנס / מתחרים (שורה לכל אחד)</label>
+          <textarea id="cb-competitors" placeholder="https://competitor1.com&#10;https://competitor2.com"></textarea>
+        </div>
+
+        <div class="brand-field">
+          <label>העלאת קבצים (PDF, Word, TXT)</label>
+          <div class="file-upload-area" onclick="document.getElementById('cb-files').click()">
+            <div class="file-upload-icon">📎</div>
+            <div class="file-upload-text">לחץ להעלאת קבצים</div>
+            <div class="file-upload-sub">PDF · Word · TXT · עד 5 קבצים</div>
+            <input id="cb-files" type="file" multiple accept=".txt,.pdf,.doc,.docx"
+              style="display:none" onchange="addBrandFiles(this)" />
+          </div>
+          <div id="cb-file-list" class="file-list"></div>
+        </div>
+
+        <div class="brand-field">
+          <label>הדבקת טקסט חופשי</label>
+          <textarea id="cb-freetext" rows="5"
+            placeholder="הדבק כאן מידע מ-notebooks, גיליונות, הערות, תיאורי מוצר, ציטוטים מלקוחות..."></textarea>
+        </div>
+      </div>
+
+      <button class="btn-analyze-brand" id="btn-analyze-brand" onclick="analyzeBrand()">
+        ✦ נתח ושמור מותג
+      </button>
+
+      <!-- Analysis result -->
+      <div id="brand-analysis-card" style="display:none">
+        <div class="analysis-badge">✓ מותג נושמר</div>
+        <div id="brand-analysis-content"></div>
+        <button class="btn-start-chat" onclick="startChatWithCustomBrand()">
+          המשך לתכנון תוכן →
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat section (shown after brand selected) -->
+    <div id="chat-section">
+      <hr class="divider" />
+      <div class="section-label">שיחה עם AI</div>
+      <div class="chat-container">
+
+        <div class="chat-header">
+          <div class="chat-avatar">✦</div>
+          <div>
+            <div class="chat-title">Content AI</div>
+            <div class="chat-subtitle">כמה שאלות לפני שאבנה את התוכנית</div>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages"></div>
+
+        <!-- Chips panel for goal selection (question 2) -->
+        <div class="chips-panel" id="chips-panel">
+          <div class="chips-grid">
+            <button class="chip" onclick="toggleChip(this)">🎯 יצירת לידים</button>
+            <button class="chip" onclick="toggleChip(this)">👥 מודעות למותג</button>
+            <button class="chip" onclick="toggleChip(this)">❤️ חיזוק קהילה</button>
+            <button class="chip" onclick="toggleChip(this)">🏆 הצגת הצלחות לקוחות</button>
+            <button class="chip" onclick="toggleChip(this)">📚 תוכן ערך / טיפים</button>
+            <button class="chip" onclick="toggleChip(this)">🎉 קידום אירוע</button>
+            <button class="chip" onclick="toggleChip(this)">🔥 מבצע / הנחה</button>
+            <button class="chip" onclick="toggleChip(this)">💡 חינוך קהל</button>
+            <button class="chip" onclick="toggleChip(this)">🤝 שיתופי פעולה</button>
+            <button class="chip" onclick="toggleChip(this)">📣 השקת מוצר / שירות חדש</button>
+          </div>
+          <button class="chips-confirm" id="chips-confirm" onclick="confirmChips()" disabled>המשך →</button>
+        </div>
+
+        <div class="chat-input-area" id="chat-input-area">
+          <textarea
+            class="chat-input"
+            id="chat-input"
+            placeholder="הקלד תשובה..."
+            rows="1"
+            onkeydown="chatKeydown(event)"
+            oninput="autoResizeInput(this)"
+          ></textarea>
+          <button class="chat-send-btn" id="chat-send-btn" onclick="submitAnswer()">↑</button>
+        </div>
+
+        <!-- Date picker for question 5 -->
+        <div class="chat-date-wrap" id="chat-date-wrap">
+          <div class="chat-date-row">
+            <input type="date" class="chat-date-input" id="chat-date-input" />
+            <button class="chat-date-confirm" onclick="confirmDate()">המשך →</button>
+          </div>
+        </div>
+
+        <div class="chat-generate-wrap" id="chat-generate-wrap">
+          <button class="btn-generate" id="btn-generate-chat" onclick="generateFromChat()">
+            צור תוכנית שבועית
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results"></div>
+
+    <!-- Download CSV (hidden) -->
+    <div id="download-section">
+      <button class="btn-download" onclick="downloadCSV()">
+        <span>⬇</span> הורד CSV
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Brand data ──────────────────────────────────────────────
+    const BRANDS = {
+      yomkef: {
+        brandName: 'יום כיף',
+        brandDesc: 'הפקת ימי גיבוש, ימי כיף ונופש תאגידי לחברות הייטק. 22 שנה. לקוחות: Nvidia, Microsoft, Check Point',
+        audience: 'מנהלות HR ורווחה, מנכ"לים בחברות 50+ עובדים',
+        tone: 'מקצועי, חם, מוביל, מעורר השראה'
+      },
+      eranpro: {
+        brandName: 'ערן פרו',
+        brandDesc: 'מיתוג אישי של ערן לוי — יזם, מפיק אירועים, מומחה לוגיסטי, 30 שנות ניסיון',
+        audience: 'יזמים, מנהלים, אנשי עסקים',
+        tone: 'אישי, ישיר, מוביל דעה, ללא BS'
+      }
+    };
+
+    const CHAT_QUESTIONS = [
+      'מה קרה השבוע בעסק / מה חשוב לך לשתף?',
+      'מה המטרה העיקרית השבוע — לידים, מודעות, או משהו אחר?',
+      'יש אירוע / חג / מבצע רלוונטי השבוע?',
+      'מה הטון שאתה רוצה — רציני, כיפי, מעורר השראה?',
+      'מה תאריך תחילת השבוע?'
+    ];
+
+    // ── State ────────────────────────────────────────────────────
+    let selectedBrand = null;
+    let lastResult    = null;
+    let lastBrandName = '';
+    let chatStep      = 0;
+    let chatAnswers   = [];
+
+    // ── Brand selection ──────────────────────────────────────────
+    function selectBrand(card) {
+      document.querySelectorAll('.brand-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      selectedBrand = card.dataset.brand;
+
+      if (selectedBrand === 'custom') {
+        // Show custom brand form, hide chat until analysis done
+        document.getElementById('custom-brand-panel').style.display = 'block';
+        document.getElementById('chat-section').classList.remove('visible');
+        document.getElementById('custom-brand-panel')
+          .scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Load saved analysis if exists
+        loadSavedBrandAnalysis();
+      } else {
+        document.getElementById('custom-brand-panel').style.display = 'none';
+        openChat();
+      }
+    }
+
+    function openChat() {
+      chatStep    = 0;
+      chatAnswers = [];
+      document.getElementById('chat-messages').innerHTML = '';
+      document.getElementById('chat-generate-wrap').classList.remove('visible');
+      document.getElementById('chat-input-area').style.display = 'flex';
+      document.getElementById('chat-date-wrap').classList.remove('visible');
+      document.getElementById('chips-panel').classList.remove('visible');
+      document.getElementById('chat-section').classList.add('visible');
+      // Set default date to next Sunday
+      const today = new Date();
+      const daysUntilSunday = today.getDay() === 0 ? 7 : 7 - today.getDay();
+      const nextSunday = new Date(today);
+      nextSunday.setDate(today.getDate() + daysUntilSunday);
+      document.getElementById('chat-date-input').value = nextSunday.toISOString().split('T')[0];
+      setTimeout(() => askQuestion(0), 400);
+    }
+
+    // ── Custom brand form ─────────────────────────────────────────
+    let brandFileTexts = []; // { name, text }
+
+    function toggleBrandTone(chip) {
+      chip.classList.toggle('selected');
+    }
+
+    function addBrandFiles(input) {
+      const files = Array.from(input.files);
+      files.slice(0, 5 - brandFileTexts.length).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          brandFileTexts.push({ name: file.name, text: e.target.result });
+          renderFileList();
+        };
+        reader.readAsText(file);
+      });
+      input.value = '';
+    }
+
+    function removeFile(index) {
+      brandFileTexts.splice(index, 1);
+      renderFileList();
+    }
+
+    function renderFileList() {
+      const list = document.getElementById('cb-file-list');
+      list.innerHTML = brandFileTexts.map((f, i) => `
+        <div class="file-item">
+          <span>📄</span>
+          <span class="file-item-name">${escHtml(f.name)}</span>
+          <button class="file-remove" onclick="removeFile(${i})">×</button>
+        </div>`).join('');
+    }
+
+    function analyzeUrl() {
+      const url = document.getElementById('cb-url').value.trim();
+      if (!url) { alert('נא להזין URL'); return; }
+      alert('ניתוח אתרים דורש proxy נפרד — ה-URL יצורף לפרומפט כטקסט');
+    }
+
+    async function analyzeBrand() {
+      const brandName  = document.getElementById('cb-name').value.trim();
+      const brandDesc  = document.getElementById('cb-desc').value.trim();
+      const audience   = document.getElementById('cb-audience').value.trim();
+      const toneChips  = [...document.querySelectorAll('.brand-tone-chip.selected')]
+                          .map(c => c.textContent.trim()).join(', ');
+      const websiteUrl = document.getElementById('cb-url').value.trim();
+      const competitors= document.getElementById('cb-competitors').value.trim();
+      const freeText   = document.getElementById('cb-freetext').value.trim();
+      const filesText  = brandFileTexts.map(f => `[${f.name}]\n${f.text}`).join('\n\n');
+
+      if (!brandName) { alert('נא להזין שם מותג'); return; }
+
+      const btn = document.getElementById('btn-analyze-brand');
+      btn.disabled    = true;
+      btn.textContent = '...מנתח מותג';
+
+      try {
+        const res = await fetch('/.netlify/functions/analyze-brand', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brandName, brandDesc, audience, toneChips,
+                                  websiteUrl, competitors, freeText, filesText })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה בניתוח');
+
+        // Save to localStorage
+        const saved = {
+          brandName,
+          brandDesc: data.summary || brandDesc,
+          audience:  data.audience || audience,
+          tone:      data.tone || toneChips || 'מקצועי',
+          values:    data.values || '',
+          topics:    data.topics || []
+        };
+        localStorage.setItem('customBrand', JSON.stringify(saved));
+
+        showBrandAnalysis(saved);
+
+      } catch (err) {
+        alert('שגיאה: ' + err.message);
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = '✦ נתח ושמור מותג';
+      }
+    }
+
+    function showBrandAnalysis(data) {
+      const topicTags = (data.topics || [])
+        .map(t => `<span class="analysis-topic-tag">${escHtml(t)}</span>`).join('');
+
+      document.getElementById('brand-analysis-content').innerHTML = `
+        <div class="analysis-field">
+          <div class="analysis-field-label">תקציר המותג</div>
+          <div class="analysis-field-value">${escHtml(data.brandDesc || '')}</div>
+        </div>
+        <div class="analysis-field">
+          <div class="analysis-field-label">קהל יעד</div>
+          <div class="analysis-field-value">${escHtml(data.audience || '')}</div>
+        </div>
+        <div class="analysis-field">
+          <div class="analysis-field-label">ערכי ליבה</div>
+          <div class="analysis-field-value">${escHtml(data.values || '')}</div>
+        </div>
+        <div class="analysis-field">
+          <div class="analysis-field-label">טון מומלץ</div>
+          <div class="analysis-field-value">${escHtml(data.tone || '')}</div>
+        </div>
+        ${data.topics?.length ? `
+        <div class="analysis-field">
+          <div class="analysis-field-label">נושאי תוכן מרכזיים</div>
+          <div class="analysis-topics">${topicTags}</div>
+        </div>` : ''}`;
+
+      document.getElementById('brand-analysis-card').style.display = 'block';
+      document.getElementById('brand-analysis-card')
+        .scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function loadSavedBrandAnalysis() {
+      try {
+        const saved = localStorage.getItem('customBrand');
+        if (saved) {
+          showBrandAnalysis(JSON.parse(saved));
+          // Pre-fill form
+          const d = JSON.parse(saved);
+          if (d.brandName) document.getElementById('cb-name').value = d.brandName;
+        }
+      } catch(e) { /* ignore */ }
+    }
+
+    function startChatWithCustomBrand() {
+      openChat();
+    }
+
+    // ── Ask a question with typing animation ─────────────────────
+    function askQuestion(index) {
+      const messagesEl = document.getElementById('chat-messages');
+
+      // Show typing indicator
+      const typingRow = document.createElement('div');
+      typingRow.className = 'bubble-row ai';
+      typingRow.id = 'typing-indicator';
+      typingRow.innerHTML = `
+        <div class="bubble-avatar">✦</div>
+        <div class="typing-bubble">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>`;
+      messagesEl.appendChild(typingRow);
+      scrollChat();
+
+      // Disable input while typing
+      setInputEnabled(false);
+
+      setTimeout(() => {
+        typingRow.remove();
+
+        // Show question bubble
+        const row = document.createElement('div');
+        row.className = 'bubble-row ai';
+        row.innerHTML = `
+          <div class="bubble-avatar">✦</div>
+          <div class="chat-bubble">${escHtml(CHAT_QUESTIONS[index])}</div>`;
+        messagesEl.appendChild(row);
+        scrollChat();
+
+        // Question 1 (index 1) = goal → show chips
+        if (index === 1) {
+          document.getElementById('chat-input-area').style.display = 'none';
+          const panel = document.getElementById('chips-panel');
+          panel.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+          document.getElementById('chips-confirm').disabled = true;
+          panel.classList.add('visible');
+          panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Question 4 (index 4) = start date → show date picker
+        } else if (index === 4) {
+          document.getElementById('chat-input-area').style.display = 'none';
+          const dateWrap = document.getElementById('chat-date-wrap');
+          dateWrap.classList.add('visible');
+          dateWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          setInputEnabled(true);
+          document.getElementById('chat-input').focus();
+        }
+      }, 900);
+    }
+
+    // ── Submit answer ────────────────────────────────────────────
+    function submitAnswer() {
+      const input = document.getElementById('chat-input');
+      const answer = input.value.trim();
+      if (!answer) return;
+
+      const messagesEl = document.getElementById('chat-messages');
+
+      // Show user bubble
+      const row = document.createElement('div');
+      row.className = 'bubble-row user';
+      row.innerHTML = `
+        <div class="bubble-avatar">א</div>
+        <div class="chat-bubble">${escHtml(answer)}</div>`;
+      messagesEl.appendChild(row);
+      scrollChat();
+
+      chatAnswers.push(answer);
+      input.value = '';
+      input.style.height = 'auto';
+      chatStep++;
+
+      if (chatStep < CHAT_QUESTIONS.length) {
+        setTimeout(() => askQuestion(chatStep), 300);
+      } else {
+        // All 4 answered — show generate button
+        setInputEnabled(false);
+        document.getElementById('chat-input-area').style.display = 'none';
+
+        setTimeout(() => {
+          const wrapEl = document.getElementById('chat-generate-wrap');
+          wrapEl.classList.add('visible');
+          wrapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 400);
+      }
+    }
+
+    // ── Chips ────────────────────────────────────────────────────
+    function toggleChip(chip) {
+      chip.classList.toggle('selected');
+      const anySelected = document.querySelectorAll('.chip.selected').length > 0;
+      document.getElementById('chips-confirm').disabled = !anySelected;
+    }
+
+    function confirmChips() {
+      const selected = [...document.querySelectorAll('.chip.selected')]
+        .map(c => c.textContent.trim());
+      const answer = selected.join(', ');
+
+      // Hide chips panel
+      document.getElementById('chips-panel').classList.remove('visible');
+
+      // Show user bubble
+      const messagesEl = document.getElementById('chat-messages');
+      const row = document.createElement('div');
+      row.className = 'bubble-row user';
+      row.innerHTML = `
+        <div class="bubble-avatar">א</div>
+        <div class="chat-bubble">${escHtml(answer)}</div>`;
+      messagesEl.appendChild(row);
+      scrollChat();
+
+      chatAnswers.push(answer);
+      chatStep++;
+
+      // Restore text input for next questions
+      document.getElementById('chat-input-area').style.display = 'flex';
+
+      if (chatStep < CHAT_QUESTIONS.length) {
+        setTimeout(() => askQuestion(chatStep), 300);
+      } else {
+        setInputEnabled(false);
+        document.getElementById('chat-input-area').style.display = 'none';
+        setTimeout(() => {
+          const wrapEl = document.getElementById('chat-generate-wrap');
+          wrapEl.classList.add('visible');
+          wrapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 400);
+      }
+    }
+
+    function confirmDate() {
+      const val = document.getElementById('chat-date-input').value;
+      if (!val) return;
+
+      // Format for display: DD/MM/YYYY
+      const [y, m, d] = val.split('-');
+      const displayDate = `${d}/${m}/${y}`;
+
+      document.getElementById('chat-date-wrap').classList.remove('visible');
+
+      const messagesEl = document.getElementById('chat-messages');
+      const row = document.createElement('div');
+      row.className = 'bubble-row user';
+      row.innerHTML = `
+        <div class="bubble-avatar">א</div>
+        <div class="chat-bubble">${escHtml(displayDate)}</div>`;
+      messagesEl.appendChild(row);
+      scrollChat();
+
+      chatAnswers.push(val); // store ISO date for API
+      chatStep++;
+
+      document.getElementById('chat-input-area').style.display = 'flex';
+
+      if (chatStep < CHAT_QUESTIONS.length) {
+        setTimeout(() => askQuestion(chatStep), 300);
+      } else {
+        setInputEnabled(false);
+        document.getElementById('chat-input-area').style.display = 'none';
+        setTimeout(() => {
+          const wrapEl = document.getElementById('chat-generate-wrap');
+          wrapEl.classList.add('visible');
+          wrapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 400);
+      }
+    }
+
+    function chatKeydown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitAnswer();
+      }
+    }
+
+    function autoResizeInput(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function setInputEnabled(enabled) {
+      const input  = document.getElementById('chat-input');
+      const btn    = document.getElementById('chat-send-btn');
+      input.disabled = !enabled;
+      btn.disabled   = !enabled;
+    }
+
+    function scrollChat() {
+      const el = document.getElementById('chat-messages');
+      el.scrollTop = el.scrollHeight;
+    }
+
+    // ── Generate from chat answers ───────────────────────────────
+    async function generateFromChat() {
+      if (!selectedBrand) return;
+
+      let brandName, brandDesc, audience, tone;
+      if (selectedBrand === 'custom') {
+        try {
+          const saved = JSON.parse(localStorage.getItem('customBrand') || '{}');
+          brandName = saved.brandName || document.getElementById('cb-name').value.trim() || 'מותג מותאם';
+          brandDesc = saved.brandDesc || '';
+          audience  = saved.audience  || '';
+          tone      = chatAnswers[3] || saved.tone || 'מקצועי';
+        } catch(e) {
+          brandName = 'מותג מותאם';
+          brandDesc = '';
+          audience  = 'קהל כללי';
+          tone      = chatAnswers[3] || 'מקצועי';
+        }
+      } else {
+        ({ brandName, brandDesc, audience, tone } = BRANDS[selectedBrand]);
+        if (chatAnswers[3]) tone = chatAnswers[3];
+      }
+      lastBrandName = brandName;
+
+      const weekGoal  = chatAnswers[1] || chatAnswers[0] || '';
+      const topics    = [chatAnswers[0], chatAnswers[2]].filter(Boolean).join('. ');
+      const startDate = chatAnswers[4] || '';
+
+      // UI: loading
+      const btn = document.getElementById('btn-generate-chat');
+      btn.disabled    = true;
+      btn.textContent = '...מייצר תוכנית';
+
+      const resultsEl = document.getElementById('results');
+      resultsEl.innerHTML = `
+        <div class="loading-msg">
+          <div class="loading-spinner"></div>
+          <span>בונה תוכנית שבועית...</span>
+        </div>`;
+      document.getElementById('download-section').style.display = 'none';
+
+      try {
+        const res = await fetch('/.netlify/functions/generate-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brandName, brandDesc, audience, tone, weekGoal, topics, startDate })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'שגיאה בשרת');
+        if (!data.week_plan || !Array.isArray(data.week_plan)) {
+          throw new Error('שגיאה בקבלת התוכן, נסה שוב');
+        }
+
+        lastResult = data.week_plan;
+        localStorage.setItem('lastWeekPlan', JSON.stringify({ brandName, startDate, week_plan: data.week_plan }));
+
+        renderResults(data.week_plan, brandName, startDate);
+        document.getElementById('download-section').style.display = 'block';
+
+      } catch (err) {
+        resultsEl.innerHTML = `<div class="error-msg">⚠ ${err.message}</div>`;
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = 'צור תוכנית שבועית';
+      }
+    }
+
+    // ── Render results table ─────────────────────────────────────
+    function renderResults(plan, brandName, startDate) {
+      const UPLOAD_INSTRUCTIONS = {
+        'אינסטגרם פיד':   '1080x1080px | כתוב קפשן | הוסף מיקום | עד 30 האשטאגים | פרסם בין 9-11 בבוקר',
+        'אינסטגרם סטורי': '1080x1920px | הוסף סטיקר שאלה | הוסף לינק בסווייפ | פרסם 18:00-21:00',
+        'אינסטגרם ריל':   '1080x1920px | 15-30 שניות | הוסף טרנד מוזיקה | כתוב כיתוב קצר | פרסם 12:00-14:00',
+        'פייסבוק פיד':    '1200x630px | כתוב טקסט מלא | הוסף קישור לאתר | פרסם 13:00-16:00',
+      };
+
+      const cols = [
+        { key: 'day',                   label: 'יום / תאריך' },
+        { key: 'topic',                 label: 'נושא' },
+        { key: 'platform',              label: 'פלטפורמה' },
+        { key: 'post_text',             label: 'טקסט פוסט' },
+        { key: 'shooting_instructions', label: 'הוראות צילום' },
+        { key: 'ai_prompt',             label: 'פרומפט AI' },
+        { key: 'best_time',             label: 'שעה מומלצת' },
+        { key: 'strategy_note',         label: 'אסטרטגיה' },
+        { key: 'upload_instructions',   label: 'הוראות העלאה' },
+      ];
+
+      const rows = plan.map((item, i) => {
+        const cells = cols.map(col => {
+          if (col.key === 'day') {
+            return `<td class="day-cell">${escHtml(item.day || '')}<br><span class="date-sub">${escHtml(item.date || '')}</span></td>`;
+          }
+          if (col.key === 'topic') {
+            return `<td class="topic-cell">${escHtml(item.topic || '')}</td>`;
+          }
+          if (col.key === 'platform') {
+            return `<td><span class="platform-badge">${escHtml(item.platform || '')}</span></td>`;
+          }
+          if (col.key === 'upload_instructions') {
+            const val = UPLOAD_INSTRUCTIONS[item.platform] || '—';
+            return `<td class="cell-with-copy">
+              <button class="copy-cell-btn" onclick="copyText(this, ${JSON.stringify(val)})">העתק</button>
+              <div class="cell-text">${escHtml(val)}</div>
+            </td>`;
+          }
+          const val = item[col.key] || '';
+          return `<td class="cell-with-copy">
+            <button class="copy-cell-btn" onclick="copyCell(this, ${i}, '${col.key}')">העתק</button>
+            <div class="cell-text">${escHtml(val)}</div>
+          </td>`;
+        });
+        return `<tr>${cells.join('')}</tr>`;
+      }).join('');
+
+      const thead = `<tr>${cols.map(c => `<th>${c.label}</th>`).join('')}</tr>`;
+
+      document.getElementById('results').innerHTML = `
+        <div class="results-header">
+          <div class="results-title">תוכנית שבועית — ${escHtml(brandName)}</div>
+          ${startDate ? `<div class="results-meta">${escHtml(startDate)}</div>` : ''}
+        </div>
+        <div class="table-wrapper">
+          <table class="week-table">
+            <thead>${thead}</thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ── Copy cell ────────────────────────────────────────────────
+    function copyCell(btn, rowIndex, key) {
+      const val = lastResult?.[rowIndex]?.[key] || '';
+      navigator.clipboard.writeText(val).then(() => {
+        btn.textContent = '✓';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'העתק'; btn.classList.remove('copied'); }, 1800);
+      });
+    }
+
+    function copyText(btn, val) {
+      navigator.clipboard.writeText(val).then(() => {
+        btn.textContent = '✓';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'העתק'; btn.classList.remove('copied'); }, 1800);
+      });
+    }
+
+    // ── Download CSV ─────────────────────────────────────────────
+    function downloadCSV() {
+      if (!lastResult) return;
+      const UPLOAD_INSTRUCTIONS_CSV = {
+        'אינסטגרם פיד':   '1080x1080px | כתוב קפשן | הוסף מיקום | עד 30 האשטאגים | פרסם בין 9-11 בבוקר',
+        'אינסטגרם סטורי': '1080x1920px | הוסף סטיקר שאלה | הוסף לינק בסווייפ | פרסם 18:00-21:00',
+        'אינסטגרם ריל':   '1080x1920px | 15-30 שניות | הוסף טרנד מוזיקה | כתוב כיתוב קצר | פרסם 12:00-14:00',
+        'פייסבוק פיד':    '1200x630px | כתוב טקסט מלא | הוסף קישור לאתר | פרסם 13:00-16:00',
+      };
+      const headers = ['יום', 'תאריך', 'נושא', 'פלטפורמה', 'טקסט פוסט', 'הוראות צילום', 'פרומפט AI', 'שעה מומלצת', 'אסטרטגיה', 'הוראות העלאה'];
+      const rows = lastResult.map(item => [
+        item.day, item.date, item.topic, item.platform,
+        item.post_text, item.shooting_instructions,
+        item.ai_prompt, item.best_time, item.strategy_note,
+        UPLOAD_INSTRUCTIONS_CSV[item.platform] || ''
+      ].map(v => `"${(v || '').replace(/"/g, '""')}"`));
+
+      const bom = '\uFEFF';
+      const csv = bom + [headers.map(h => `"${h}"`), ...rows].map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `${lastBrandName}-content.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ── Restore last result from localStorage ───────────────────
+    (function () {
+      try {
+        const saved = localStorage.getItem('lastWeekPlan');
+        if (saved) {
+          const { brandName, startDate, week_plan } = JSON.parse(saved);
+          lastResult    = week_plan;
+          lastBrandName = brandName;
+          renderResults(week_plan, brandName, startDate);
+          document.getElementById('download-section').style.display = 'block';
+        }
+      } catch (e) { /* ignore */ }
+    })();
+
+    // ── Helpers ──────────────────────────────────────────────────
+    function escHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = String(str);
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>
