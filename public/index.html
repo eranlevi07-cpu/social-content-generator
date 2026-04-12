@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Social Content Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAgsN2JqAUft-qopgzC4bbqUSp7-40JLGI",
+    authDomain: "social-content-generator-2b673.firebaseapp.com",
+    projectId: "social-content-generator-2b673",
+    storageBucket: "social-content-generator-2b673.firebasestorage.app",
+    messagingSenderId: "622851583756",
+    appId: "1:622851583756:web:9822ccb0e06f5356456329"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  const db = getFirestore(app);
+  window.firebaseAuth = auth;
+  window.db = db;
+  window.firestoreAdd = (col, data) => addDoc(collection(db, col), data);
+  window.firestoreGet = (col, uid) => getDocs(query(collection(db, col), where('uid','==',uid), orderBy('createdAt','desc'), limit(20)));
+  window.googleProvider = provider;
+  window.firebaseSignIn = () => signInWithPopup(auth, provider);
+  window.firebaseSignOut = () => signOut(auth);
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appScreen').style.display = 'block';
+      document.getElementById('userAvatar').src = user.photoURL || '';
+      document.getElementById('userName').textContent = user.displayName || user.email;
+    } else {
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('appScreen').style.display = 'none';
+    }
+  });
+</script>
+
+<style>
+  :root {
+    --cream: #FDF8F2; --warm: #F5EFE6; --sand: #E8DDD0;
+    --terracotta: #C4714A; --terra-light: #E8956D; --terra-pale: #F5D5C5;
+    --forest: #3D6B5A; --forest-light: #5A9B84;
+    --slate: #4A5568; --ink: #2D3748; --muted: #8A9BB0; --white: #FFFFFF;
+    --shadow-sm: 0 2px 8px rgba(45,55,72,0.08);
+    --shadow-md: 0 8px 32px rgba(45,55,72,0.12);
+    --radius: 16px; --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Heebo', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+  /* ── Login Screen ── */
+  #loginScreen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; background: linear-gradient(135deg, var(--cream) 0%, var(--warm) 100%);
+  }
+  .login-box {
+    background: white; border-radius: 24px; padding: 48px 40px;
+    text-align: center; box-shadow: var(--shadow-md); max-width: 420px; width: 90%;
+  }
+  .login-logo { font-size: 40px; margin-bottom: 16px; }
+  .login-title { font-family: 'DM Serif Display', serif; font-size: 28px; margin-bottom: 8px; }
+  .login-sub { color: var(--muted); font-size: 15px; margin-bottom: 32px; }
+  .btn-google {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; padding: 14px; border: 2px solid var(--sand);
+    border-radius: var(--radius); background: white; cursor: pointer;
+    font-family: 'Heebo', sans-serif; font-size: 16px; font-weight: 600;
+    color: var(--ink); transition: all .2s;
+  }
+  .btn-google:hover { border-color: var(--terracotta); background: var(--warm); transform: translateY(-1px); }
+  .google-icon { width: 22px; height: 22px; }
+
+  /* ── Header ── */
+  .header {
+    background: var(--white); border-bottom: 1px solid var(--sand);
+    padding: 0 32px; height: 68px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 100;
+    box-shadow: var(--shadow-sm);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; color: var(--ink); }
+  .logo-dot { width: 10px; height: 10px; background: var(--terracotta); border-radius: 50%; }
+  .user-area { display: flex; align-items: center; gap: 12px; }
+  .user-avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--sand); }
+  .user-name { font-size: 14px; font-weight: 600; color: var(--slate); }
+  .btn-logout {
+    padding: 7px 14px; background: var(--warm); border: 1px solid var(--sand);
+    border-radius: var(--radius-sm); font-family: 'Heebo', sans-serif;
+    font-size: 13px; cursor: pointer; color: var(--slate); transition: all .2s;
+  }
+  .btn-logout:hover { background: var(--sand); }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+  /* ── Steps ── */
+  .steps-bar {
+    display: flex; margin-bottom: 40px; background: var(--white);
+    border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow-sm);
+    border: 1px solid var(--sand);
+  }
+  .step-item {
+    flex: 1; padding: 10px 8px; text-align: center; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: var(--muted); transition: all .3s;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .step-item.active { background: var(--terracotta); color: white; }
+  .step-item.done { color: var(--forest); }
+  .step-num { font-size: 18px; font-weight: 700; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--white); border-radius: var(--radius); padding: 32px;
+    box-shadow: var(--shadow-sm); border: 1px solid var(--sand); margin-bottom: 24px;
+  }
+  .card-title { font-family: 'DM Serif Display', serif; font-size: 26px; margin-bottom: 8px; }
+  .card-subtitle { color: var(--muted); font-size: 15px; margin-bottom: 28px; }
+
+  /* ── Brand grid ── */
+  .brand-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .brand-card {
+    border: 2px solid var(--sand); border-radius: var(--radius); padding: 24px 20px;
+    cursor: pointer; transition: all .25s; text-align: center; position: relative;
+  }
+  .brand-card:hover { border-color: var(--terracotta); transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .brand-card.selected { border-color: var(--terracotta); box-shadow: 0 0 0 3px var(--terra-pale); }
+  .brand-emoji { font-size: 40px; margin-bottom: 12px; display: block; }
+  .brand-name { font-weight: 700; font-size: 17px; margin-bottom: 4px; }
+  .brand-desc { font-size: 13px; color: var(--muted); line-height: 1.4; }
+
+  /* ── URL section ── */
+  .url-section {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-light) 100%);
+    border-radius: var(--radius); padding: 28px; margin-top: 20px; color: white;
+  }
+  .url-section h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .url-section p { font-size: 13px; opacity: .8; margin-bottom: 16px; }
+  .url-input-row { display: flex; gap: 10px; }
+  .url-input {
+    flex: 1; padding: 12px 16px; border-radius: var(--radius-sm);
+    border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.15);
+    color: white; font-family: 'Heebo', sans-serif; font-size: 14px; outline: none;
+  }
+  .url-input::placeholder { color: rgba(255,255,255,0.5); }
+  .btn-analyze {
+    padding: 12px 20px; background: white; color: var(--forest); border: none;
+    border-radius: var(--radius-sm); font-family: 'Heebo', sans-serif;
+    font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s;
+  }
+  .btn-analyze:hover { transform: translateY(-1px); }
+  .url-insights {
+    margin-top: 16px; background: rgba(255,255,255,0.12); border-radius: var(--radius-sm);
+    padding: 14px 16px; font-size: 13px; line-height: 1.6; display: none;
+  }
+  .url-insights.visible { display: block; }
+
+  /* ── Questions ── */
+  .question-block { margin-bottom: 24px; }
+  .question-label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 10px; }
+  .question-number {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; background: var(--terracotta); color: white;
+    border-radius: 50%; font-size: 13px; font-weight: 700; margin-left: 8px;
+  }
+  textarea, input[type=text], select {
+    width: 100%; padding: 14px 16px; border: 1.5px solid var(--sand);
+    border-radius: var(--radius-sm); font-family: 'Heebo', sans-serif;
+    font-size: 14px; color: var(--ink); background: var(--cream); outline: none;
+    transition: border-color .2s; resize: vertical;
+  }
+  textarea:focus, input[type=text]:focus { border-color: var(--terracotta); background: var(--white); }
+  .chips-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 8px 16px; border: 1.5px solid var(--sand); border-radius: 24px;
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: all .2s;
+    background: var(--white); color: var(--slate); user-select: none;
+  }
+  .chip:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  .chip.selected { background: var(--terracotta); border-color: var(--terracotta); color: white; }
+
+  /* ── Buttons ── */
+  .btn-generate {
+    width: 100%; padding: 18px; background: linear-gradient(135deg, var(--terracotta), var(--terra-light));
+    color: white; border: none; border-radius: var(--radius); font-family: 'Heebo', sans-serif;
+    font-size: 18px; font-weight: 700; cursor: pointer; transition: all .25s;
+    box-shadow: 0 4px 16px rgba(196,113,74,0.35);
+  }
+  .btn-generate:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(196,113,74,0.45); }
+  .btn-generate:disabled { opacity: .6; cursor: not-allowed; }
+  .btn-secondary {
+    padding: 10px 20px; background: var(--white); color: var(--slate);
+    border: 1.5px solid var(--sand); border-radius: var(--radius-sm);
+    font-family: 'Heebo', sans-serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-secondary:hover { border-color: var(--slate); background: var(--warm); }
+  .btn-primary {
+    padding: 10px 20px; background: var(--terracotta); color: white; border: none;
+    border-radius: var(--radius-sm); font-family: 'Heebo', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary:hover { background: var(--terra-light); transform: translateY(-1px); }
+
+  /* ── Loading ── */
+  .loading-card {
+    background: var(--white); border-radius: var(--radius); padding: 60px 32px;
+    text-align: center; border: 1px solid var(--sand); box-shadow: var(--shadow-sm); display: none;
+  }
+  .loading-card.visible { display: block; }
+  .spinner {
+    width: 52px; height: 52px; border: 4px solid var(--sand);
+    border-top-color: var(--terracotta); border-radius: 50%;
+    animation: spin 1s linear infinite; margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 17px; font-weight: 600; color: var(--slate); }
+  .loading-sub { font-size: 14px; color: var(--muted); margin-top: 6px; }
+
+  /* ── Results ── */
+  #results-section { display: none; }
+  #results-section.visible { display: block; }
+  .results-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+  }
+  .results-title { font-family: 'DM Serif Display', serif; font-size: 30px; }
+  .results-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .week-table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+  .week-table { width: 100%; border-collapse: collapse; background: var(--white); font-size: 14px; }
+  .week-table thead tr { background: var(--ink); color: white; }
+  .week-table th { padding: 14px 16px; text-align: right; font-weight: 600; font-size: 13px; }
+  .week-table td { padding: 16px; border-bottom: 1px solid var(--warm); vertical-align: top; line-height: 1.55; }
+  .week-table tr:last-child td { border-bottom: none; }
+  .week-table tr:nth-child(even) td { background: var(--cream); }
+  .week-table tr:hover td { background: var(--terra-pale); transition: background .15s; }
+  .day-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .day-1 { background: #FDE8D8; color: #C4714A; }
+  .day-2 { background: #D8EDE7; color: #3D6B5A; }
+  .day-3 { background: #D8E6F5; color: #2C5F8A; }
+  .day-4 { background: #F5D8E8; color: #8A2C5F; }
+  .day-5 { background: #EEF5D8; color: #5F8A2C; }
+  .platform-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; background: var(--sand); color: var(--slate); margin-bottom: 6px;
+  }
+  .content-cell { white-space: pre-wrap; }
+  .hashtags { color: var(--terracotta); font-size: 12px; margin-top: 6px; }
+
+  /* ── Cookie Banner ── */
+  .cookie-banner {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+    background: var(--ink); color: white; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+  }
+  .cookie-text { font-size: 14px; flex: 1; }
+  .cookie-text a { color: var(--terra-light); }
+  .cookie-buttons { display: flex; gap: 10px; }
+  .btn-cookie-accept {
+    padding: 8px 20px; background: var(--terracotta); color: white;
+    border: none; border-radius: var(--radius-sm); font-family: 'Heebo', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-cookie-decline {
+    padding: 8px 16px; background: transparent; color: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.3); border-radius: var(--radius-sm);
+    font-family: 'Heebo', sans-serif; font-size: 14px; cursor: pointer;
+  }
+
+  /* ── Accessibility ── */
+  .a11y-btn {
+    position: fixed; left: 16px; bottom: 80px; z-index: 999;
+    width: 48px; height: 48px; background: var(--forest); color: white;
+    border: none; border-radius: 50%; font-size: 22px; cursor: pointer;
+    box-shadow: var(--shadow-md); display: flex; align-items: center; justify-content: center;
+  }
+  .a11y-panel {
+    position: fixed; left: 72px; bottom: 80px; z-index: 999;
+    background: white; border-radius: var(--radius); padding: 20px;
+    box-shadow: var(--shadow-lg); border: 1px solid var(--sand);
+    display: none; min-width: 220px;
+  }
+  .a11y-panel.open { display: block; }
+  .a11y-title { font-weight: 700; font-size: 15px; margin-bottom: 14px; color: var(--ink); }
+  .a11y-option {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; font-size: 14px;
+  }
+  .a11y-toggle {
+    width: 40px; height: 22px; background: var(--sand); border-radius: 11px;
+    border: none; cursor: pointer; position: relative; transition: background .2s;
+  }
+  .a11y-toggle.on { background: var(--forest); }
+  .a11y-toggle::after {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    background: white; border-radius: 50%; top: 3px; left: 3px; transition: left .2s;
+  }
+  .a11y-toggle.on::after { left: 21px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--ink); color: white; padding: 12px 24px;
+    border-radius: 24px; font-size: 14px; font-weight: 500;
+    box-shadow: var(--shadow-lg); transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    z-index: 9999; pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--forest); }
+  .toast.error { background: #C0392B; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .card { animation: fadeUp .4s ease both; }
+
+  @media (max-width: 700px) {
+    .brand-grid { grid-template-columns: 1fr; }
+    .header { padding: 0 16px; }
+    .container { padding: 24px 16px; }
+    .card { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="loginScreen" style="display:flex">
+  <div class="login-box">
+    <div class="login-logo">✨</div>
+    <div class="login-title">Social Content Generator</div>
+    <div class="login-sub">צור תוכן שיווקי מקצועי עם AI<br>לעסק שלך — בדקות</div>
+    <button class="btn-google" onclick="window.firebaseSignIn()">
+      <svg class="google-icon" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      התחבר עם Google
+    </button>
+  </div>
+</div>
+
+<!-- ══ APP SCREEN ══ -->
+<div id="appScreen" style="display:none">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo"><div class="logo-dot"></div>Social Content Generator</div>
+    <div class="user-area">
+      <img class="user-avatar" id="userAvatar" src="" alt=""/>
+      <span class="user-name" id="userName"></span>
+      <button class="btn-logout" onclick="window.firebaseSignOut()">יציאה</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Steps -->
+    <div class="steps-bar" id="stepsBar">
+      <div class="step-item active" id="step1"><span class="step-num">1</span><span>בחירת מותג</span></div>
+      <div class="step-item" id="step2"><span class="step-num">2</span><span>שאלון</span></div>
+      <div class="step-item" id="step3"><span class="step-num">3</span><span>תוכנית שבועית</span></div>
+    </div>
+
+    <!-- SECTION 1: Brand -->
+    <div id="section-brand">
+      <div class="card">
+        <div class="card-title">בחר מותג</div>
+        <div class="card-subtitle">לכל מותג סגנון ייחודי של תוכן</div>
+        <div class="brand-grid">
+          <div class="brand-card yom-kef" data-brand="yom_kef" onclick="selectBrand(this)">
+            <span class="brand-emoji">🎉</span>
+            <div class="brand-name">יום כיף</div>
+            <div class="brand-desc">חוויות, אירועים, בילויים</div>
+          </div>
+          <div class="brand-card eran-pro" data-brand="eran_pro" onclick="selectBrand(this)">
+            <span class="brand-emoji">🚀</span>
+            <div class="brand-name">ערן פרו</div>
+            <div class="brand-desc">יזמות, עסקים, הדרכה</div>
+          </div>
+          <div class="brand-card new-brand" data-brand="custom" onclick="selectBrand(this)">
+            <span class="brand-emoji">✨</span>
+            <div class="brand-name">מותג חדש</div>
+            <div class="brand-desc">מותאם אישית לחלוטין</div>
+          </div>
+        </div>
+
+        <div class="url-section" id="brandIntelligence" style="display:none">
+          <h3>🔍 Brand Intelligence</h3>
+          <p>הכנס URL של האתר שלך ונחלץ את ה-DNA של המותג</p>
+          <div class="url-input-row">
+            <input type="text" class="url-input" id="urlInput" placeholder="https://www.example.co.il"/>
+            <button class="btn-analyze" id="btnAnalyze" onclick="analyzeUrl()">🔍 נתח</button>
+          </div>
+          <div class="url-insights" id="urlInsights"></div>
+        </div>
+
+        <div style="margin-top:24px; text-align:left">
+          <button class="btn-generate" style="max-width:280px; font-size:16px; padding:14px 28px" onclick="goToQuestionnaire()">המשך לשאלון ←</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Questionnaire -->
+    <div id="section-questionnaire" style="display:none">
+      <div class="card">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px">
+          <button class="btn-secondary" onclick="goBack()" style="padding:8px 14px; font-size:13px">← חזור</button>
+          <div class="card-title" style="margin-bottom:0">שאלון AI</div>
+        </div>
+        <div class="card-subtitle" id="questionnaireSubtitle">5 שאלות קצרות לתוכנית מותאמת</div>
+        <div id="questionsContainer"></div>
+        <button class="btn-generate" onclick="generatePlan()">✨ צור תוכנית שבועית</button>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading-card" id="loadingCard">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loadingText">יוצר תוכנית שבועית...</div>
+      <div class="loading-sub">Claude מנתח את המותג שלך ומייצר תוכן מותאם</div>
+    </div>
+
+    <!-- SECTION 3: Results -->
+    <div id="results-section">
+      <div class="results-header">
+        <div class="results-title" id="resultsTitle">תוכנית שבועית 📅</div>
+        <div class="results-actions">
+          <button class="btn-secondary" onclick="startOver()">🔄 התחל מחדש</button>
+          <button class="btn-secondary" onclick="downloadCSV()">⬇️ הורד CSV</button>
+        </div>
+      </div>
+      <div class="week-table-wrap">
+        <table class="week-table" id="weekTable">
+          <thead>
+            <tr>
+              <th>יום</th><th>פלטפורמה</th><th>נושא</th>
+              <th>תוכן</th><th>האשטאגים</th><th>CTA</th>
+            </tr>
+          </thead>
+          <tbody id="weekTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ COOKIE BANNER ══ -->
+<div class="cookie-banner" id="cookieBanner" style="display:none">
+  <div class="cookie-text">
+    🍪 אנחנו משתמשים בעוגיות כדי לשפר את החוויה שלך.
+    <a href="#" onclick="return false">מדיניות פרטיות</a>
+  </div>
+  <div class="cookie-buttons">
+    <button class="btn-cookie-decline" onclick="declineCookies()">דחה</button>
+    <button class="btn-cookie-accept" onclick="acceptCookies()">אישור</button>
+  </div>
+</div>
+
+<!-- ══ ACCESSIBILITY ══ -->
+<button class="a11y-btn" onclick="toggleA11y()" title="נגישות" aria-label="פתח תפריט נגישות">♿</button>
+<div class="a11y-panel" id="a11yPanel">
+  <div class="a11y-title">⚙️ נגישות</div>
+  <div class="a11y-option">
+    <span>גופן גדול</span>
+    <button class="a11y-toggle" id="toggleFont" onclick="toggleFeature('font')" aria-label="הגדל גופן"></button>
+  </div>
+  <div class="a11y-option">
+    <span>ניגודיות גבוהה</span>
+    <button class="a11y-toggle" id="toggleContrast" onclick="toggleFeature('contrast')" aria-label="ניגודיות גבוהה"></button>
+  </div>
+  <div class="a11y-option">
+    <span>ללא אנימציות</span>
+    <button class="a11y-toggle" id="toggleMotion" onclick="toggleFeature('motion')" aria-label="הפחת תנועה"></button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<script>
+// ══ State ══
+let state = { brand: null, brandName: '', urlInsights: '', answers: {}, plan: [] };
+
+const GENERATE_URL = 'https://generatecontent-zg62rbdwvq-uc.a.run.app';
+const ANALYZE_URL  = 'https://us-central1-social-content-generator-2b673.cloudfunctions.net/analyzeBrand';
+
+const QUESTIONS = {
+  yom_kef: [
+    { id:'q1', label:'איזה סוגי פעילויות/אירועים אתה מציע?', type:'text', placeholder:'יציאות לטבע, ספורט, ארוחות...' },
+    { id:'q2', label:'מי קהל היעד?', type:'chips', options:['משפחות','צעירים 20-30','זוגות','קבוצות חברים','Team building'] },
+    { id:'q3', label:'מה הטון המועדף?', type:'chips', options:['קליל ומצחיק','מרגש ואנרגטי','חם ומשפחתי','מסתורי'] },
+    { id:'q4', label:'אילו ערכים חשוב להעביר?', type:'text', placeholder:'כיף, הרפתקה, זיכרונות...' },
+    { id:'q5', label:'מה המבצע / נושא השבוע?', type:'text', placeholder:'הנחה מוקדמת, אירוע מיוחד...' }
+  ],
+  eran_pro: [
+    { id:'q1', label:'מה ההתמחות שלך?', type:'text', placeholder:'מכירות, שיווק, יזמות...' },
+    { id:'q2', label:'מי הלקוח האידיאלי?', type:'chips', options:['יזמים','מנהלים','אנשי מכירות','פרילנסרים','סטודנטים'] },
+    { id:'q3', label:'פורמט תוכן מועדף?', type:'chips', options:['טיפים מעשיים','סיפורי הצלחה','תובנות שוק','שאלות מחשבה'] },
+    { id:'q4', label:'הצעת הערך הייחודית?', type:'text', placeholder:'שיטה X, גישה Y, תוצאה Z...' },
+    { id:'q5', label:'מה מקדמים השבוע?', type:'text', placeholder:'קורס, קונסולטינג, ספר...' }
+  ],
+  custom: [
+    { id:'q1', label:'שם המותג ותחום?', type:'text', placeholder:'שם + תחום פעילות' },
+    { id:'q2', label:'מי קהל היעד?', type:'text', placeholder:'גיל, תחומי עניין, כאבים...' },
+    { id:'q3', label:'אופי המותג?', type:'chips', options:['מקצועי ורציני','שובב ויצירתי','חם ואנושי','יוקרתי ואלגנטי','ישיר ותכליתי','השראתי ומעצים'] },
+    { id:'q4', label:'הערכים המרכזיים?', type:'text', placeholder:'מה הקהל יזכור?' },
+    { id:'q5', label:'המוצר ומטרת השבוע?', type:'text', placeholder:'מה רוצים למכור?' }
+  ]
+};
+
+// ══ Brand ══
+function selectBrand(el) {
+  document.querySelectorAll('.brand-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.brand = el.dataset.brand;
+  state.brandName = el.querySelector('.brand-name').textContent;
+  document.getElementById('brandIntelligence').style.display = state.brand === 'custom' ? 'block' : 'none';
+}
+
+function goBack() {
+  document.getElementById('section-questionnaire').style.display = 'none';
+  document.getElementById('section-brand').style.display = 'block';
+  setStep(1);
+}
+
+function goToQuestionnaire() {
+  if (!state.brand) { showToast('בחר מותג תחילה 👆', 'error'); return; }
+  document.getElementById('section-brand').style.display = 'none';
+  document.getElementById('section-questionnaire').style.display = 'block';
+  setStep(2);
+  renderQuestions();
+}
+
+// ══ Brand Intelligence ══
+async function analyzeUrl() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { showToast('הכנס URL תחילה', 'error'); return; }
+  const btn = document.getElementById('btnAnalyze');
+  const insightsEl = document.getElementById('urlInsights');
+  
+  btn.disabled = true; btn.textContent = '⏳ מנתח...';
+  insightsEl.classList.remove('visible');
+  insightsEl.innerHTML = '<div style="display:flex;align-items:center;gap:10px"><div style="width:18px;height:18px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div> מנתח את האתר שלך...</div>';
+  insightsEl.classList.add('visible');
+
+  try {
+    const res = await fetch(ANALYZE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    const data = await res.json();
+    if (data.insights) {
+      state.urlInsights = data.insights;
+      insightsEl.innerHTML = '✅ ' + data.insights;
+      
+      // Auto-fill questions from insights
+      autoFillFromInsights(data.insights);
+      showToast('✅ ניתוח הושלם! השאלות מולאו אוטומטית', 'success');
+    }
+  } catch(e) { 
+    insightsEl.textContent = '⚠️ לא ניתן לנתח — ממשיך ללא ניתוח';
+    showToast('שגיאה בניתוח', 'error'); 
+  }
+  finally { btn.disabled = false; btn.textContent = '🔍 נתח שנית'; }
+}
+
+function autoFillFromInsights(insights) {
+  // Auto-fill q1 (brand name/domain) from URL
+  const urlEl = document.getElementById('urlInput');
+  if (urlEl && urlEl.value) {
+    try {
+      const domain = new URL(urlEl.value).hostname.replace('www.','');
+      const q1 = document.getElementById('q1');
+      if (q1 && !q1.value) q1.value = domain;
+    } catch(e) {}
+  }
+  
+  // Try to extract values from insights for q4
+  const q4 = document.getElementById('q4');
+  if (q4 && !q4.value && insights.length > 50) {
+    // Extract key phrases - take first meaningful sentence
+    const sentences = insights.split(/[.!?]/);
+    const valueSentence = sentences.find(s => s.includes('ערך') || s.includes('מאמין') || s.includes('מתמחה') || s.includes('מציע'));
+    if (valueSentence) q4.value = valueSentence.trim();
+  }
+  
+  // Auto-fill q2 (target audience) if mentioned
+  const q2 = document.getElementById('q2');
+  if (q2 && !q2.value) {
+    const audienceKeywords = ['לקוחות', 'קהל', 'עסקים', 'אנשים', 'צעירים', 'מנהלים', 'משפחות'];
+    const audienceSentence = insights.split(/[.!?]/).find(s => audienceKeywords.some(k => s.includes(k)));
+    if (audienceSentence) q2.value = audienceSentence.trim();
+  }
+}
+
+// ══ Questions ══
+function renderQuestions() {
+  const qs = QUESTIONS[state.brand] || QUESTIONS.custom;
+  document.getElementById('questionnaireSubtitle').textContent = `תוכנית שבועית מותאמת ל${state.brandName}`;
+  document.getElementById('questionsContainer').innerHTML = qs.map((q,i) => `
+    <div class="question-block">
+      <label class="question-label"><span class="question-number">${i+1}</span>${q.label}</label>
+      ${q.type==='text'
+        ? `<textarea id="${q.id}" rows="2" placeholder="${q.placeholder||''}"></textarea>`
+        : `<div class="chips-row" id="${q.id}_chips">${q.options.map(o=>`<div class="chip" onclick="toggleChip(this,'${q.id}')">${o}</div>`).join('')}</div><input type="hidden" id="${q.id}"/>`
+      }
+    </div>`).join('');
+}
+
+function toggleChip(el, id) {
+  el.classList.toggle('selected');
+  document.getElementById(id).value = [...document.querySelectorAll(`#${id}_chips .chip.selected`)].map(c=>c.textContent).join(', ');
+}
+
+// ══ Generate ══
+async function generatePlan() {
+  const qs = QUESTIONS[state.brand] || QUESTIONS.custom;
+  const answers = {};
+  for (const q of qs) { const el = document.getElementById(q.id); answers[q.id] = el ? el.value.trim() : ''; }
+  state.answers = answers;
+  const answersText = qs.map((q,i)=>`${i+1}. ${q.label}\nתשובה: ${answers[q.id]||'—'}`).join('\n\n');
+  const prompt = `אתה מומחה שיווק דיגיטלי ישראלי. צור תוכנית תוכן שבועית ל-5 ימים (ראשון עד חמישי) עבור המותג: ${state.brandName}.
+${state.urlInsights?`מידע מאתר המותג:\n${state.urlInsights}\n\n`:''}
+תשובות לשאלון:\n${answersText}
+
+החזר JSON בלבד (ללא markdown):
+{"days":[{"day":"ראשון","platform":"Instagram","topic":"נושא","content":"טקסט","hashtags":"#tag1 #tag2","cta":"קריאה לפעולה"}]}
+כללים: 5 ימים, פלטפורמות מגוונות, עברית, תוכן אמיתי, 3-5 האשטאגים.`;
+
+  document.getElementById('section-questionnaire').style.display = 'none';
+  document.getElementById('loadingCard').style.display = 'block';
+  setStep(3);
+
+  const texts = ['מנתח את המותג...','יוצר רעיונות...','מתאים לפלטפורמות...','מסיים...'];
+  let li = 0;
+  const lInt = setInterval(()=>{ document.getElementById('loadingText').textContent = texts[li++%texts.length]; }, 2200);
+
+  try {
+    const res = await fetch(GENERATE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({prompt}) });
+    const data = await res.json();
+    clearInterval(lInt);
+    document.getElementById('loadingCard').style.display = 'none';
+    let parsed;
+    try { parsed = JSON.parse((data.content||'').replace(/```json|```/g,'').trim()); }
+    catch { showToast('שגיאה בפענוח התגובה', 'error'); document.getElementById('section-questionnaire').style.display='block'; return; }
+    state.plan = parsed.days || [];
+    saveToFirestore();
+    renderResults();
+  } catch(e) {
+    clearInterval(lInt);
+    document.getElementById('loadingCard').style.display = 'none';
+    showToast('שגיאה ביצירת התוכנית — נסה שנית', 'error');
+    document.getElementById('section-questionnaire').style.display = 'block';
+    setStep(2);
+  }
+}
+
+// ══ Results ══
+function renderResults() {
+  const section = document.getElementById('results-section');
+  section.style.display = 'block'; section.classList.add('visible');
+  document.getElementById('resultsTitle').textContent = `תוכנית שבועית — ${state.brandName} 📅`;
+  document.getElementById('weekTableBody').innerHTML = state.plan.map((row,i) => `
+    <tr>
+      <td><span class="day-badge day-${i+1}">${row.day}</span></td>
+      <td><span class="platform-tag">${row.platform}</span></td>
+      <td><strong>${row.topic}</strong></td>
+      <td class="content-cell">${row.content}</td>
+      <td class="hashtags">${row.hashtags}</td>
+      <td>${row.cta}</td>
+    </tr>`).join('');
+}
+
+// ══ CSV ══
+async function saveToFirestore() {
+  try {
+    const user = window.firebaseAuth.currentUser;
+    if (!user || !window.firestoreAdd) return;
+    await window.firestoreAdd("plans", {
+      uid: user.uid,
+      userEmail: user.email,
+      brand: state.brand,
+      brandName: state.brandName,
+      answers: state.answers,
+      plan: state.plan,
+      urlInsights: state.urlInsights,
+      createdAt: new Date().toISOString()
+    });
+    showToast("✅ נשמר בהיסטוריה שלך", "success");
+  } catch(e) { console.error("Firestore save error:", e); }
+}
+
+function downloadCSV() {
+  const headers = ['יום','פלטפורמה','נושא','תוכן','האשטאגים','CTA'];
+  const rows = state.plan.map(d=>[d.day,d.platform,d.topic,`"${(d.content||'').replace(/"/g,'""')}"`,d.hashtags,d.cta]);
+  const csv = '\uFEFF' + [headers,...rows].map(r=>r.join(',')).join('\n');
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  link.download = `content-plan-${state.brandName}-${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+  showToast('⬇️ CSV הורד', 'success');
+}
+
+function startOver() {
+  state = { brand:null, brandName:'', urlInsights:'', answers:{}, plan:[] };
+  document.getElementById('section-brand').style.display = 'block';
+  document.getElementById('section-questionnaire').style.display = 'none';
+  document.getElementById('loadingCard').style.display = 'none';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('results-section').classList.remove('visible');
+  document.querySelectorAll('.brand-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('brandIntelligence').style.display = 'none';
+  setStep(1);
+}
+
+function setStep(n) {
+  for (let i=1;i<=3;i++) {
+    const el = document.getElementById(`step${i}`);
+    el.classList.remove('active','done');
+    if (i<n) el.classList.add('done');
+    else if (i===n) el.classList.add('active');
+  }
+}
+
+// ══ Toast ══
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast${type?' '+type:''}`;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ══ Cookies ══
+function initCookies() {
+  if (!localStorage.getItem('cookieConsent')) {
+    document.getElementById('cookieBanner').style.display = 'flex';
+  }
+}
+function acceptCookies() {
+  localStorage.setItem('cookieConsent','accepted');
+  document.getElementById('cookieBanner').style.display = 'none';
+  showToast('✅ העדפות נשמרו', 'success');
+}
+function declineCookies() {
+  localStorage.setItem('cookieConsent','declined');
+  document.getElementById('cookieBanner').style.display = 'none';
+}
+
+// ══ Accessibility ══
+const a11yState = { font:false, contrast:false, motion:false };
+function toggleA11y() {
+  document.getElementById('a11yPanel').classList.toggle('open');
+}
+function toggleFeature(feature) {
+  a11yState[feature] = !a11yState[feature];
+  document.getElementById('toggle'+feature.charAt(0).toUpperCase()+feature.slice(1)).classList.toggle('on', a11yState[feature]);
+  if (feature==='font') document.body.style.fontSize = a11yState.font ? '118%' : '';
+  if (feature==='contrast') document.body.classList.toggle('high-contrast', a11yState.contrast);
+  if (feature==='motion') document.body.classList.toggle('no-motion', a11yState.motion);
+}
+
+// Init
+window.addEventListener('load', initCookies);
+</script>
+
+<style>
+.high-contrast { filter: contrast(1.5); }
+.no-motion * { animation: none !important; transition: none !important; }
+</style>
+</body>
+</html>
