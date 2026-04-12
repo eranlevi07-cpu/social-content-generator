@@ -896,6 +896,62 @@
     }
 
     .btn-start-chat:hover { background: var(--accent-hover); }
+
+    /* Saved brand cards */
+    .saved-brands-grid {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 580px) { .saved-brands-grid { grid-template-columns: 1fr; } }
+
+    .brand-card-wrap { position: relative; }
+
+    .brand-card-actions {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .brand-card-wrap:hover .brand-card-actions { opacity: 1; }
+
+    .brand-card-action-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px 6px;
+      line-height: 1.4;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .brand-card-action-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .brand-card-action-btn.delete:hover { color: #ef4444; border-color: #ef4444; }
+
+    .btn-add-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 20px;
+      cursor: pointer;
+      margin-bottom: 32px;
+      transition: border-color 0.18s, color 0.18s;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-add-brand:hover { border-color: var(--accent); color: var(--accent); }
   </style>
 </head>
 <body>
@@ -923,13 +979,13 @@
         <div class="brand-desc">מיתוג אישי ותוכן מקצועי</div>
       </div>
 
-      <div class="brand-card" data-brand="custom" onclick="selectBrand(this)">
-        <span class="brand-icon">✦</span>
-        <div class="brand-name">מותג חדש +</div>
-        <div class="brand-desc">הגדר מותג עם ניתוח AI</div>
-      </div>
-
     </div>
+
+    <!-- Saved brands (dynamic) -->
+    <div class="saved-brands-grid" id="saved-brands-grid"></div>
+
+    <!-- Add new brand button -->
+    <button class="btn-add-brand" onclick="openAddBrand()">+ הוסף מותג חדש</button>
 
     <!-- Custom brand form panel -->
     <div id="custom-brand-panel" style="display:none">
@@ -1118,30 +1174,97 @@
     ];
 
     // ── State ────────────────────────────────────────────────────
-    let selectedBrand = null;
-    let lastResult    = null;
-    let lastBrandName = '';
-    let chatStep      = 0;
-    let chatAnswers   = [];
+    let selectedBrand     = null;
+    let currentSavedBrand = null;
+    let editingBrandId    = null;
+    let lastResult        = null;
+    let lastBrandName     = '';
+    let chatStep          = 0;
+    let chatAnswers       = [];
 
-    // ── Brand selection ──────────────────────────────────────────
+    // ── Saved brands (localStorage) ──────────────────────────────
+    function getSavedBrands() {
+      try { return JSON.parse(localStorage.getItem('savedBrands') || '[]'); }
+      catch(e) { return []; }
+    }
+
+    function saveBrandToStorage(brandData) {
+      const brands = getSavedBrands();
+      const idx = brands.findIndex(b => b.id === brandData.id);
+      if (idx >= 0) brands[idx] = brandData;
+      else brands.push(brandData);
+      localStorage.setItem('savedBrands', JSON.stringify(brands));
+    }
+
+    function deleteBrand(id) {
+      if (!confirm('למחוק את המותג?')) return;
+      const brands = getSavedBrands().filter(b => b.id !== id);
+      localStorage.setItem('savedBrands', JSON.stringify(brands));
+      loadSavedBrands();
+    }
+
+    function loadSavedBrands() {
+      const brands = getSavedBrands();
+      const container = document.getElementById('saved-brands-grid');
+      if (!brands.length) { container.style.display = 'none'; return; }
+      container.style.display = 'grid';
+      container.innerHTML = brands.map(b => `
+        <div class="brand-card-wrap">
+          <div class="brand-card" data-brand="saved-${escHtml(b.id)}" onclick="selectSavedBrand('${b.id}')">
+            <span class="brand-icon">${b.icon || '✦'}</span>
+            <div class="brand-name">${escHtml(b.brandName)}</div>
+            <div class="brand-desc">${escHtml((b.brandDesc || '').slice(0, 55))}${b.brandDesc?.length > 55 ? '...' : ''}</div>
+          </div>
+          <div class="brand-card-actions">
+            <button class="brand-card-action-btn" onclick="event.stopPropagation(); editBrand('${b.id}')" title="ערוך">✎</button>
+            <button class="brand-card-action-btn delete" onclick="event.stopPropagation(); deleteBrand('${b.id}')" title="מחק">×</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function selectSavedBrand(id) {
+      const brand = getSavedBrands().find(b => b.id === id);
+      if (!brand) return;
+      document.querySelectorAll('.brand-card').forEach(c => c.classList.remove('active'));
+      document.querySelector(`[data-brand="saved-${id}"]`)?.classList.add('active');
+      selectedBrand     = 'saved';
+      currentSavedBrand = brand;
+      document.getElementById('custom-brand-panel').style.display = 'none';
+      openChat();
+    }
+
+    function editBrand(id) {
+      const brand = getSavedBrands().find(b => b.id === id);
+      if (!brand) return;
+      editingBrandId = id;
+      document.getElementById('cb-name').value      = brand.brandName || '';
+      document.getElementById('cb-desc').value      = brand.rawDesc || brand.brandDesc || '';
+      document.getElementById('cb-audience').value  = brand.audience || '';
+      document.getElementById('custom-brand-panel').style.display = 'block';
+      document.getElementById('custom-brand-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function openAddBrand() {
+      editingBrandId = null;
+      document.querySelectorAll('.brand-card').forEach(c => c.classList.remove('active'));
+      selectedBrand = 'custom';
+      document.getElementById('cb-name').value     = '';
+      document.getElementById('cb-desc').value     = '';
+      document.getElementById('cb-audience').value = '';
+      document.getElementById('custom-brand-panel').style.display = 'block';
+      document.getElementById('brand-analysis-card').style.display = 'none';
+      document.getElementById('chat-section').classList.remove('visible');
+      document.getElementById('custom-brand-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ── Brand selection (fixed brands) ───────────────────────────
     function selectBrand(card) {
       document.querySelectorAll('.brand-card').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
-      selectedBrand = card.dataset.brand;
-
-      if (selectedBrand === 'custom') {
-        // Show custom brand form, hide chat until analysis done
-        document.getElementById('custom-brand-panel').style.display = 'block';
-        document.getElementById('chat-section').classList.remove('visible');
-        document.getElementById('custom-brand-panel')
-          .scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Load saved analysis if exists
-        loadSavedBrandAnalysis();
-      } else {
-        document.getElementById('custom-brand-panel').style.display = 'none';
-        openChat();
-      }
+      selectedBrand     = card.dataset.brand;
+      currentSavedBrand = null;
+      document.getElementById('custom-brand-panel').style.display = 'none';
+      openChat();
     }
 
     function openChat() {
@@ -1231,16 +1354,24 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'שגיאה בניתוח');
 
-        // Save to localStorage
+        // Save to brands array
+        const brandId = editingBrandId || ('brand_' + Date.now());
         const saved = {
+          id:        brandId,
+          icon:      '✦',
           brandName,
+          rawDesc:   brandDesc,
           brandDesc: data.summary || brandDesc,
           audience:  data.audience || audience,
           tone:      data.tone || toneChips || 'מקצועי',
           values:    data.values || '',
           topics:    data.topics || []
         };
-        localStorage.setItem('customBrand', JSON.stringify(saved));
+        saveBrandToStorage(saved);
+        loadSavedBrands();
+        currentSavedBrand = saved;
+        selectedBrand = 'saved';
+        editingBrandId = null;
 
         showBrandAnalysis(saved);
 
@@ -1282,18 +1413,6 @@
       document.getElementById('brand-analysis-card').style.display = 'block';
       document.getElementById('brand-analysis-card')
         .scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function loadSavedBrandAnalysis() {
-      try {
-        const saved = localStorage.getItem('customBrand');
-        if (saved) {
-          showBrandAnalysis(JSON.parse(saved));
-          // Pre-fill form
-          const d = JSON.parse(saved);
-          if (d.brandName) document.getElementById('cb-name').value = d.brandName;
-        }
-      } catch(e) { /* ignore */ }
     }
 
     function startChatWithCustomBrand() {
@@ -1501,21 +1620,14 @@
       if (!selectedBrand) return;
 
       let brandName, brandDesc, audience, tone;
-      if (selectedBrand === 'custom') {
-        try {
-          const saved = JSON.parse(localStorage.getItem('customBrand') || '{}');
-          brandName = saved.brandName || document.getElementById('cb-name').value.trim() || 'מותג מותאם';
-          brandDesc = saved.brandDesc || '';
-          audience  = saved.audience  || '';
-          tone      = chatAnswers[3] || saved.tone || 'מקצועי';
-        } catch(e) {
-          brandName = 'מותג מותאם';
-          brandDesc = '';
-          audience  = 'קהל כללי';
-          tone      = chatAnswers[3] || 'מקצועי';
-        }
+      if (selectedBrand === 'saved' && currentSavedBrand) {
+        brandName = currentSavedBrand.brandName || 'מותג מותאם';
+        brandDesc = currentSavedBrand.brandDesc || '';
+        audience  = currentSavedBrand.audience  || '';
+        tone      = chatAnswers[3] || currentSavedBrand.tone || 'מקצועי';
       } else {
-        ({ brandName, brandDesc, audience, tone } = BRANDS[selectedBrand]);
+        ({ brandName, brandDesc, audience, tone } = BRANDS[selectedBrand] || {});
+        brandName = brandName || 'מותג';
         if (chatAnswers[3]) tone = chatAnswers[3];
       }
       lastBrandName = brandName;
@@ -1675,6 +1787,9 @@
       a.click();
       URL.revokeObjectURL(url);
     }
+
+    // ── Init ─────────────────────────────────────────────────────
+    loadSavedBrands();
 
     // ── Restore last result from localStorage ───────────────────
     (function () {
