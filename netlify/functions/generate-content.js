@@ -66,19 +66,33 @@ Return ONLY this JSON structure with exactly 5 items:
 {"day":"חמישי","date":"DD/MM","topic":"topic in Hebrew","platform":"אינסטגרם פיד","post_text":"Hebrew post text with emojis and 3 hashtags","shooting_instructions":"Hebrew instructions","ai_prompt":"English prompt for AI image generator","best_time":"09:00","strategy_note":"Hebrew note"}
 ]}`;
 
-  const data = await httpsPost(
-    'https://api.anthropic.com/v1/messages',
-    {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    {
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }]
-    }
-  );
+  console.log('API key length:', apiKey.length);
+  console.log('Calling Anthropic API...');
+
+  let data;
+  try {
+    data = await httpsPost(
+      'https://api.anthropic.com/v1/messages',
+      {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      {
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: prompt }]
+      }
+    );
+    console.log('API response received:', JSON.stringify(data).slice(0, 200));
+  } catch(err) {
+    console.log('API call error:', err.message);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'שגיאת חיבור ל-API: ' + err.message })
+    };
+  }
 
   const text = data.content?.[0]?.text || '';
   console.log('AI response:', text);
