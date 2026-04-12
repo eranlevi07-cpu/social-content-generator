@@ -9,17 +9,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0f1117;
-      --card: #1a1d27;
-      --card-hover: #1f2335;
-      --border: #2a2d3e;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --card-hover: #f1f5f9;
+      --border: #e2e8f0;
       --border-active: #3b82f6;
       --accent: #3b82f6;
       --accent-hover: #2563eb;
-      --text: #f1f5f9;
-      --text-muted: #64748b;
-      --text-secondary: #94a3b8;
-      --input-bg: #12151f;
+      --text: #0f172a;
+      --text-muted: #94a3b8;
+      --text-secondary: #475569;
+      --input-bg: #f8fafc;
       --radius: 12px;
     }
 
@@ -223,7 +223,7 @@
     }
 
     .bubble-row.user .bubble-avatar {
-      background: #1e3a5f;
+      background: #dbeafe;
     }
 
     .chat-bubble {
@@ -241,7 +241,7 @@
     }
 
     .bubble-row.ai .chat-bubble {
-      background: #1e2235;
+      background: #f1f5f9;
       border: 1px solid var(--border);
       color: var(--text);
       border-top-right-radius: 4px;
@@ -255,7 +255,7 @@
 
     /* Typing indicator */
     .typing-bubble {
-      background: #1e2235;
+      background: #f1f5f9;
       border: 1px solid var(--border);
       padding: 12px 16px;
       border-radius: 18px;
@@ -392,7 +392,7 @@
 
     input::placeholder, textarea::placeholder { color: var(--text-muted); }
     textarea { resize: vertical; min-height: 100px; }
-    input[type="date"] { color-scheme: dark; }
+    input[type="date"] { color-scheme: light; }
 
     .row-2 {
       display: grid;
@@ -504,7 +504,7 @@
 
     .week-table td {
       padding: 14px;
-      border-bottom: 1px solid rgba(42,45,62,0.6);
+      border-bottom: 1px solid var(--border);
       vertical-align: top;
       color: var(--text-secondary);
       line-height: 1.55;
@@ -668,7 +668,7 @@
       font-family: 'Heebo', sans-serif;
       font-size: 15px;
       padding: 10px 14px;
-      color-scheme: dark;
+      color-scheme: light;
       transition: border-color 0.18s;
     }
 
