@@ -1,8 +1,28 @@
-const fetch = require('node-fetch');
+const https = require('https');
+
+function httpsPost(url, headers, body) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const bodyStr = JSON.stringify(body);
+    const options = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: { ...headers, 'Content-Length': Buffer.byteLength(bodyStr) }
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve(JSON.parse(data)));
+    });
+    req.on('error', reject);
+    req.write(bodyStr);
+    req.end();
+  });
+}
 
 exports.handler = async function(event) {
 
-  // תמיכה ב-CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -15,16 +35,14 @@ exports.handler = async function(event) {
     };
   }
 
-  // בדיקת API key
   if (!process.env.ANTHROPIC_API_KEY) {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'ANTHROPIC_API_KEY חסר — הגדר ב-Netlify Environment Variables' })
+      body: JSON.stringify({ error: 'ANTHROPIC_API_KEY חסר' })
     };
   }
 
-  // קריאה ל-Anthropic
   const body = JSON.parse(event.body);
   const { brandName, brandDesc, tone, weekGoal, topics, startDate } = body;
   const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim().replace(/[^\x20-\x7E]/g, '');
@@ -48,25 +66,23 @@ Return ONLY this JSON structure with exactly 5 items:
 {"day":"חמישי","date":"DD/MM","topic":"topic in Hebrew","platform":"אינסטגרם פיד","post_text":"Hebrew post text with emojis and 3 hashtags","shooting_instructions":"Hebrew instructions","ai_prompt":"English prompt for AI image generator","best_time":"09:00","strategy_note":"Hebrew note"}
 ]}`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
+  const data = await httpsPost(
+    'https://api.anthropic.com/v1/messages',
+    {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01'
     },
-    body: JSON.stringify({
+    {
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
-    })
-  });
+    }
+  );
 
-  const data = await response.json();
   const text = data.content?.[0]?.text || '';
   console.log('AI response:', text);
 
-  // נקה JSON מ-markdown אם יש
   const clean = text.replace(/```json|```/g, '').trim();
   let parsed;
   try {
@@ -75,16 +91,13 @@ Return ONLY this JSON structure with exactly 5 items:
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'ה-AI לא החזיר JSON תקין — נסה שוב. אם הבעיה חוזרת, פשט את השאלות.' })
+      body: JSON.stringify({ error: 'ה-AI לא החזיר JSON תקין — נסה שוב.' })
     };
   }
 
   return {
     statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    },
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     body: JSON.stringify(parsed)
   };
 };

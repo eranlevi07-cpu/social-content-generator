@@ -1,4 +1,25 @@
-const fetch = require('node-fetch');
+const https = require('https');
+
+function httpsPost(url, headers, body) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const bodyStr = JSON.stringify(body);
+    const options = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: { ...headers, 'Content-Length': Buffer.byteLength(bodyStr) }
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve(JSON.parse(data)));
+    });
+    req.on('error', reject);
+    req.write(bodyStr);
+    req.end();
+  });
+}
 
 exports.handler = async function(event) {
 
@@ -18,7 +39,7 @@ exports.handler = async function(event) {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'ANTHROPIC_API_KEY חסר — הגדר ב-Netlify Environment Variables' })
+      body: JSON.stringify({ error: 'ANTHROPIC_API_KEY חסר' })
     };
   }
 
@@ -46,21 +67,20 @@ Return ONLY this JSON (all values in Hebrew):
   "topics": ["topic 1", "topic 2", "topic 3", "topic 4", "topic 5"]
 }`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
+  const data = await httpsPost(
+    'https://api.anthropic.com/v1/messages',
+    {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01'
     },
-    body: JSON.stringify({
+    {
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }]
-    })
-  });
+    }
+  );
 
-  const data = await response.json();
   const text = data.content?.[0]?.text || '';
   console.log('analyze-brand response:', text);
 
